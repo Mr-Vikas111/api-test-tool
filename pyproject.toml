@@ -1,0 +1,42 @@
+[project]
+name = "opencode"
+version = "0.1.0"
+description = "AI Test API — Webhook + Ollama runner powered by FastAPI"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.34",
+    "pydantic>=2.10",
+    "pydantic-settings>=2.7",
+    "structlog>=0.25",
+    "psycopg2-binary>=2.9",
+    "requests>=2.32",
+    "python-dotenv>=1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.25",
+    "ruff>=0.9",
+    "mypy>=1.15",
+    "httpx>=0.28",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP", "B", "A", "C4", "EM", "G", "PIE", "RET", "S", "SIM", "T20", "TID", "TRY"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101"]
+
+[tool.mypy]
+strict = true
+python_version = "3.11"
+warn_unused_ignores = true
+warn_redundant_casts = true
+ignore_missing_imports = false
+exclude = ["alembic/"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Test API Capture</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <div class="window-frame">
+
+    <!-- ── Title bar ─────────────────────────────────────────────────────── -->
+    <header>
+      <div class="header-title">
+        <span class="logo">⚡</span>
+        <span>AI Test API Capture</span>
+      </div>
+      <div class="header-actions">
+        <div id="status-dot" class="dot dot-idle" title="Capture inactive"></div>
+        <button id="btn-theme" class="title-btn" title="Toggle dark/light mode">☀</button>
+        <button id="btn-compact" class="title-btn fullpage-only" title="Return to popup view" style="display:none">&lt;</button>
+        <button id="btn-fullpage" class="title-btn" title="Open as full page">⛶</button>
+      </div>
+    </header>
+
+    <!-- ── Workflow steps ─────────────────────────────────────────────────── -->
+    <div class="workflow-bar">
+      <div class="step step-active" id="step-1">
+        <span class="step-num">1</span>
+        <span class="step-label">Capture</span>
+      </div>
+      <span class="step-arrow">›</span>
+      <div class="step step-pending" id="step-2">
+        <span class="step-num">2</span>
+        <span class="step-label">Analyze</span>
+      </div>
+      <span class="step-arrow">›</span>
+      <div class="step step-pending" id="step-3">
+        <span class="step-num">3</span>
+        <span class="step-label">Results</span>
+      </div>
+    </div>
+
+    <!-- ── Controls ────────────────────────────────────────────────────────── -->
+    <div class="controls">
+      <button id="btn-start" class="btn btn-green">▶ Start</button>
+      <button id="btn-stop"  class="btn btn-red"   disabled>■ Stop</button>
+      <button id="btn-clear" class="btn btn-gray">Clear</button>
+      <span id="capture-count" class="count">0 requests</span>
+    </div>
+
+    <!-- ── Webhook ─────────────────────────────────────────────────────────── -->
+    <div class="webhook-bar">
+      <div class="webhook-row">
+        <input
+          id="webhook-url"
+          type="url"
+          placeholder="Webhook URL (e.g. http://localhost:5055/api/v1/webhook)"
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <button id="btn-test-webhook" class="btn btn-gray btn-sm" title="Ping /health to verify server is running">Test</button>
+        <button id="btn-save-webhook" class="btn btn-blue btn-sm">Save</button>
+      </div>
+      <div id="webhook-status" class="webhook-status hidden"></div>
+    </div>
+
+    <!-- ── Main split (left=list, right=panels) ──────────────────────────── -->
+    <div class="main-split">
+
+      <!-- Left column: filter + request list -->
+      <div class="col-left">
+
+        <!-- ── Filter ────────────────────────────────────────────────────── -->
+        <div class="filter-bar">
+          <input
+            id="filter-input"
+            type="text"
+            placeholder="Filter by URL, method, or status…"
+            autocomplete="off"
+          />
+          <div id="method-filter" class="method-filter">
+            <button class="mf-btn active" data-method="ALL">All <span class="mf-count">0</span></button>
+            <button class="mf-btn" data-method="GET">GET <span class="mf-count">0</span></button>
+            <button class="mf-btn" data-method="POST">POST <span class="mf-count">0</span></button>
+            <button class="mf-btn" data-method="PUT">PUT <span class="mf-count">0</span></button>
+            <button class="mf-btn" data-method="PATCH">PATCH <span class="mf-count">0</span></button>
+            <button class="mf-btn" data-method="DELETE">DEL <span class="mf-count">0</span></button>
+          </div>
+        </div>
+
+        <!-- ── Request list ───────────────────────────────────────────────── -->
+        <div id="request-list" class="request-list">
+          <div class="empty-state">No requests captured yet.<br/>Press <strong>▶ Start</strong> then use the page.</div>
+        </div>
+
+      </div><!-- /.col-left -->
+
+      <!-- Right column: detail + results panels -->
+      <div class="col-right">
+
+        <!-- ── Detail panel ───────────────────────────────────────────────── -->
+        <div id="detail-panel" class="detail-panel hidden">
+
+          <div class="detail-header">
+            <span id="detail-title" class="detail-title"></span>
+            <button id="btn-close-detail" class="btn-icon" title="Close">✕</button>
+          </div>
+
+          <div class="tabs">
+            <button class="tab-btn active" data-tab="request">Request</button>
+            <button class="tab-btn"        data-tab="response">Response</button>
+            <button class="tab-btn"        data-tab="export">Export JSON</button>
+          </div>
+
+          <!-- Request tab -->
+          <div id="tab-request" class="tab-content active">
+            <label>URL</label>
+            <pre id="detail-url" class="code-block"></pre>
+            <label>Headers</label>
+            <pre id="detail-req-headers" class="code-block"></pre>
+            <label>Payload</label>
+            <pre id="detail-payload" class="code-block"></pre>
+          </div>
+
+          <!-- Response tab -->
+          <div id="tab-response" class="tab-content">
+            <label>Status</label>
+            <pre id="detail-status" class="code-block"></pre>
+            <label>Headers</label>
+            <pre id="detail-res-headers" class="code-block"></pre>
+            <label>Body</label>
+            <pre id="detail-response" class="code-block scrollable"></pre>
+          </div>
+
+          <!-- Export tab -->
+          <div id="tab-export" class="tab-content">
+            <p class="export-note">
+              This JSON is ready to feed into the webhook endpoint <code>POST /api/v1/webhook</code>.
+            </p>
+            <pre id="detail-export" class="code-block scrollable"></pre>
+            <div class="export-actions">
+              <button id="btn-copy"     class="btn btn-blue">Copy</button>
+              <button id="btn-download" class="btn btn-blue">Download</button>
+            </div>
+          </div>
+
+          <div id="api-testcase-workspace" class="api-testcase-workspace hidden">
+            <div class="api-testcase-header">
+              <div>
+                <div class="api-testcase-kicker">Selected API Testcases</div>
+                <div id="api-testcase-subtitle" class="api-testcase-subtitle">Generated tests for the selected request will appear here.</div>
+              </div>
+              <div id="api-testcase-count" class="api-testcase-count">0 tests</div>
+            </div>
+            <div id="api-testcase-chips" class="api-testcase-chips hidden"></div>
+            <div class="api-testcase-shell">
+              <div id="api-testcase-list" class="api-testcase-list"></div>
+              <div id="api-testcase-viewer" class="api-testcase-viewer"></div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- ── Test Results panel ─────────────────────────────────────────────── -->
+        <div id="results-panel" class="results-panel hidden">
+
+          <div class="results-header">
+            <span class="results-title">Test Results</span>
+            <span id="results-restored-badge" class="results-restored-badge hidden">Restored</span>
+            <button id="btn-expand-all"   class="btn-icon-sm" title="Expand all tests">+</button>
+            <button id="btn-collapse-all" class="btn-icon-sm" title="Collapse all tests">−</button>
+            <button id="btn-close-results" class="btn-icon" title="Close">✕</button>
+          </div>
+
+          <!-- Results filter tabs -->
+          <div class="results-filter-bar">
+            <button class="rf-btn active" data-filter="all">All</button>
+            <button class="rf-btn" data-filter="pass">Pass</button>
+            <button class="rf-btn" data-filter="fail">Fail</button>
+            <button class="rf-btn" data-filter="error">Error</button>
+            <button id="btn-reset-all-filters" class="rf-btn rf-btn-reset" title="Reset all request and results filters">Reset</button>
+            <span id="results-filter-count" class="rf-count"></span>
+            <span id="results-scope" class="results-scope hidden"></span>
+            <button id="btn-clear-results-scope" class="btn-icon-sm results-scope-clear hidden" title="Clear selected API scope">✕</button>
+          </div>
+          <div id="results-category-filter" class="results-category-filter hidden"></div>
+
+          <!-- Progress / status bar -->
+          <div id="results-status-bar" class="results-status-bar">
+            <span id="results-status-text" class="results-status-text">Waiting…</span>
+            <span id="results-spinner" class="spinner hidden"></span>
+          </div>
+          <div id="results-progress-wrap" class="progress-wrap hidden">
+            <div id="results-progress-bar" class="progress-bar"></div>
+          </div>
+
+          <!-- Summary row -->
+          <div id="results-summary" class="results-summary hidden">
+            <span id="sum-passed" class="sum-chip sum-pass">0 Passed</span>
+            <span id="sum-failed" class="sum-chip sum-fail">0 Failed</span>
+            <span id="sum-errors" class="sum-chip sum-err">0 Errors</span>
+          </div>
+
+          <!-- Per-test list -->
+          <div id="results-list" class="results-list"></div>
+
+        </div><!-- /#results-panel -->
+
+      </div><!-- /.col-right -->
+    </div><!-- /.main-split -->
+
+  </div><!-- /.window-frame -->
+
+  <script src="popup.js"></script>
+</body>
+</html>
