@@ -1,4 +1,4 @@
-"""Loads system prompts for agents from .github markdown files."""
+"""Loads system prompts for agents from .opencode/ markdown files."""
 
 from __future__ import annotations
 
@@ -7,14 +7,14 @@ from functools import lru_cache
 from pathlib import Path
 
 _REPO_ROOT = Path(__file__).resolve().parents[4]
-_AGENTS_DIR = _REPO_ROOT / ".github" / "agents"
-_SKILLS_DIR = _REPO_ROOT / ".github" / "skills"
+_AGENTS_DIR = _REPO_ROOT / ".opencode" / "agents"
+_SKILLS_DIR = _REPO_ROOT / ".opencode" / "skills"
 
 _USE_CASE_MAP: dict[str, dict[str, tuple[str, ...]]] = {
-    "generate": {"agents": ("api-test-orchestrator", "testcase-generator"), "skills": ("api-test-generation", "api-testing-standards")},
-    "execute": {"agents": ("api-test-orchestrator", "test-executor"), "skills": ("api-test-execution",)},
-    "analyse": {"agents": ("api-test-orchestrator", "test-response-analyst"), "skills": ("api-test-reporting", "api-batch-triage")},
-    "full": {"agents": ("api-test-orchestrator", "testcase-generator", "test-executor", "test-response-analyst"),
+    "generate": {"agents": ("orchestrator", "testcase-generator"), "skills": ("api-test-generation", "api-testing-standards")},
+    "execute": {"agents": ("orchestrator", "test-executor"), "skills": ("api-test-execution",)},
+    "analyse": {"agents": ("orchestrator", "test-response-analyst"), "skills": ("api-test-reporting", "api-batch-triage")},
+    "full": {"agents": ("orchestrator", "testcase-generator", "test-executor", "test-response-analyst"),
              "skills": ("api-test-generation", "api-test-execution", "api-test-reporting", "api-batch-triage")},
 }
 
@@ -34,7 +34,7 @@ def _load_file(path: Path) -> str:
 
 
 def load_agent(agent_name: str) -> str:
-    return _load_file(_AGENTS_DIR / f"{agent_name}.agent.md")
+    return _load_file(_AGENTS_DIR / f"{agent_name}.md")
 
 
 def load_skill(skill_name: str) -> str:

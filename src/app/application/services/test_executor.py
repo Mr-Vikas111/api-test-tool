@@ -9,8 +9,8 @@ from typing import Any
 from app.application.interfaces.base_agent import BaseOllamaAgent
 from app.application.interfaces.llm_adapter import LLMAdapter
 from app.application.services.prompt_loader import load_use_case_prompt
-from app.infrastructure.external.ollama_client import _extract_json
 from app.infrastructure.external import test_runner
+from app.infrastructure.external.ollama_client import _extract_json
 
 log = logging.getLogger(__name__)
 
@@ -86,7 +86,8 @@ class TestExecutorAgent(BaseOllamaAgent):
         if isinstance(parsed, dict):
             parsed.setdefault("results", results)
             return parsed
-        raise ValueError("LLM did not return a valid object")
+        msg = "LLM did not return a valid object"
+        raise ValueError(msg)
 
     def _fallback(self, summary: dict, results: list[dict], failures: list[dict]) -> dict[str, Any]:
         return {

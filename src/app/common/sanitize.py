@@ -32,7 +32,8 @@ def filter_requests(
     requests_list: list[dict],
 ) -> tuple[list[dict], dict]:
     if not isinstance(requests_list, list):
-        raise ValidationError("'requests' must be a list")
+        msg = "'requests' must be a list"
+        raise ValidationError(msg)
 
     report: dict[str, Any] = {
         "original": len(requests_list),

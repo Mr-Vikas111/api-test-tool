@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from app.infrastructure.database import connection as db
@@ -33,7 +33,7 @@ def _parse_json(val: Any) -> Any:
 class BatchStore:
     def create_batch(self, body: dict, requests_list: list[dict], filter_report: dict, client_ip: str = "unknown") -> str:
         batch_id = _new_batch_id()
-        created_at = datetime.now(tz=timezone.utc).isoformat()
+        created_at = datetime.now(tz=UTC).isoformat()
         db.execute(
             "INSERT INTO batches (id, status, message, client_ip, created_at, filter_report, total_requests, progress_done, progress_total) "
             "VALUES (%s, %s, %s, %s, %s, %s, %s, 0, %s)",
@@ -53,7 +53,7 @@ class BatchStore:
 
     def create_pending_batch(self, client_ip: str = "unknown") -> str:
         batch_id = _new_batch_id()
-        created_at = datetime.now(tz=timezone.utc).isoformat()
+        created_at = datetime.now(tz=UTC).isoformat()
         db.execute(
             "INSERT INTO batches (id, status, message, client_ip, created_at) VALUES (%s, %s, %s, %s, %s)",
             (batch_id, STATUS_PENDING, "Received — validating...", client_ip, created_at),
@@ -194,7 +194,7 @@ class BatchStore:
         }
 
     def finalise(self, batch_id: str) -> None:
-        now = datetime.now(tz=timezone.utc).isoformat()
+        now = datetime.now(tz=UTC).isoformat()
         db.execute(
             "UPDATE batches SET status = %s, completed_at = %s WHERE id = %s AND status IN (%s, %s)",
             (STATUS_DONE, now, batch_id, STATUS_RUNNING, STATUS_PENDING),
@@ -213,7 +213,7 @@ class BatchStore:
                   "summary": {"total": r["total_requests"], "passed": r["passed"], "failed": r["failed"], "errors": r["errors"]}} for r in rows]
 
     def cleanup(self, max_age_days: int = 7) -> int:
-        cutoff = datetime.now(tz=timezone.utc) - timedelta(days=max_age_days)
+        cutoff = datetime.now(tz=UTC) - timedelta(days=max_age_days)
         rows = db.execute("DELETE FROM batches WHERE created_at < %s RETURNING id", (cutoff.isoformat(),))
         return len(rows)
 

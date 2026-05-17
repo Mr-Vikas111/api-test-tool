@@ -2,6 +2,7 @@
 .env
 .env.*
 !.env.example
+env/
 
 # Secrets & credentials
 *.key
@@ -18,15 +19,38 @@ dist/
 build/
 .venv/
 venv/
+.ruff_cache/
+.pytest_cache/
+*.pyc
+*.pyo
 
 # IDE
 .vscode/
 .idea/
+*.swp
+*.swo
+*~
 
 # OS
 .DS_Store
 Thumbs.db
+*.orig
 
 # Project
 *.db
 *.sqlite3
+
+# Logs
+*.log
+logs/
+
+# Coverage / reports
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.coverage
+
+# Alembic versions (auto-generated)
+alembic/versions/*.py
+!alembic/versions/.gitkeep

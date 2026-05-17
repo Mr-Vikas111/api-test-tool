@@ -2,18 +2,16 @@
 
 from __future__ import annotations
 
-from collections.abc import Generator
 from unittest.mock import MagicMock, patch
 
 import pytest
-from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 
 from app.main import create_application
 
 
 @pytest.fixture
-def app() -> Generator[FastAPI, None, None]:
+def app():
     with patch("app.infrastructure.factory.store_module") as m, \
          patch("app.infrastructure.database.connection.init_db"), \
          patch("app.infrastructure.database.connection.execute", return_value=[]), \
@@ -33,7 +31,7 @@ def app() -> Generator[FastAPI, None, None]:
 
 
 @pytest.fixture
-async def client(app: FastAPI) -> AsyncClient:  # type: ignore[misc]
+async def client(app):
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
@@ -49,32 +47,28 @@ class TestWebhook:
         resp = await client.post("/api/v1/webhook", json={"requests": []})
         assert resp.status_code == 400
 
-    async def test_webhook_invalid_payload_returns_400(self, client: AsyncClient) -> None:
+    async def test_webhook_invalid_payload_returns_422(self, client: AsyncClient) -> None:
         resp = await client.post("/api/v1/webhook", json={})
-        assert resp.status_code == 400
+        assert resp.status_code == 422
 
     async def test_webhook_accepts_valid_payload(self, client: AsyncClient) -> None:
-        payload: dict[str, object] = {
-            "requests": [
-                {
-                    "method": "GET",
-                    "url": "https://api.example.com/users",
-                    "headers": {},
-                    "payload": None,
-                }
-            ],
-        }
+        payload = {"requests": [{"method": "GET", "url": "https://api.example.com/users", "headers": {}, "payload": None}]}
         resp = await client.post("/api/v1/webhook", json=payload)
         assert resp.status_code == 200
-        data = resp.json()
-        assert data["ok"] is True
-        assert "batch_id" in data
+        body = resp.json()
+        assert body["success"] is True
+        assert body["data"]["batch_id"] == "test-batch-123"
 
     async def test_list_batches_returns_list(self, client: AsyncClient) -> None:
         resp = await client.get("/api/v1/batches")
         assert resp.status_code == 200
-        assert "batches" in resp.json()
+        body = resp.json()
+        assert body["success"] is True
+        assert isinstance(body["data"]["batches"], list)
 
     async def test_unknown_batch_returns_404(self, client: AsyncClient) -> None:
         resp = await client.get("/api/v1/results/nonexistent")
         assert resp.status_code == 404
+        body = resp.json()
+        assert body["success"] is False
+        assert body["error"]["code"] == "NOT_FOUND"

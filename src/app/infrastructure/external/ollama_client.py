@@ -31,7 +31,8 @@ def _extract_json(text: str) -> Any:
                 return json.loads(text[s:e + 1])
             except json.JSONDecodeError:
                 pass
-    raise ValueError(f"Could not extract JSON from response:\n{text[:600]}")
+    msg = f"Could not extract JSON from response:\n{text[:600]}"
+    raise ValueError(msg)
 
 
 def _ensure_list(value: Any) -> list[dict]:

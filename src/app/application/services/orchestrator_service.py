@@ -5,10 +5,10 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from app.application.interfaces.llm_adapter import AdapterFactory, LLMAdapter
 from app.application.services.test_analyst import TestResponseAnalystAgent
 from app.application.services.test_executor import TestExecutorAgent
 from app.application.services.testcase_generator import TestcaseGeneratorAgent
-from app.application.interfaces.llm_adapter import AdapterFactory, LLMAdapter
 from app.infrastructure.database import batch_store as store_module
 
 log = logging.getLogger(__name__)
@@ -38,7 +38,7 @@ class AgentOrchestrator:
             try:
                 test_cases = self._generator.generate(api_log)
             except ConnectionError as exc:
-                log.error("[Orchestrator] Stage 1 connection error for %s: %s", label, exc)
+                log.exception("[Orchestrator] Stage 1 connection error for %s: %s", label, exc)
                 self._db.set_status(batch_id, status=store_module.STATUS_ERROR, message=str(exc), error=str(exc))
                 self._db.finalise(batch_id)
                 return
@@ -53,10 +53,13 @@ class AgentOrchestrator:
                 self._db.set_status(batch_id, groups=groups)
                 continue
 
+            self._db.store_test_cases(batch_id, i, test_cases)
+
             log.info("[Orchestrator] Stage 2 — executing %d tests for %s", len(test_cases), label)
             self._db.set_status(batch_id, message=f"[Executor] Running {len(test_cases)} tests for {label}...")
             exec_result = self._executor.execute(test_cases)
             tc_results = exec_result.get("results", [])
+            self._db.store_test_results(batch_id, i, tc_results)
             summary = {"total": exec_result.get("total", 0), "passed": exec_result.get("passed", 0),
                        "failed": exec_result.get("failed", 0), "errors": exec_result.get("errors", 0)}
 
@@ -68,6 +71,8 @@ class AgentOrchestrator:
             self._db.set_status(batch_id, groups=groups,
                                 summary={"total": all_passed + all_failed + all_errors, "passed": all_passed, "failed": all_failed, "errors": all_errors},
                                 progress={"done": i + 1, "total": n})
+
+        self._db.store_groups(batch_id, groups)
 
         self._db.set_status(batch_id, message="[Analyst] Running AI risk assessment...")
         try:

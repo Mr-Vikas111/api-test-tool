@@ -656,7 +656,7 @@ function appendResultRow(container, r) {
   const icon  = r.error ? "!" : r.passed ? "OK" : "X";
   const cls   = r.error ? "result-error" : r.passed ? "result-pass" : "result-fail";
   const category = r.category || "";
-  const catLabel = category ? `<span class="cat-badge cat-${escHtml(category)}" title="Filter by this category">${escHtml(category.replace(/_/g, " "))}</span>` : "";
+  const catLabel = category ? `<span class="cat-badge cat-${category.replace(/[^a-zA-Z0-9_-]/g, "")}" title="Filter by this category: ${escHtml(category.replace(/_/g, " "))}">${escHtml(category.replace(/_/g, " "))}</span>` : "";
   const badge = r.actual_status
     ? `<span class="res-status ${statusBadgeClass(r.actual_status, r.passed)}">${r.actual_status}</span>`
     : (r.expected_status ? `<span class="res-status res-status-expected">exp ${r.expected_status}</span>` : "");
@@ -918,7 +918,9 @@ function escHtml(str) {
   return String(str)
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#x27;");
 }
 
 function toPrettyJson(value) {

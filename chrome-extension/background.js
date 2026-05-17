@@ -42,8 +42,34 @@ function tryParseJSON(text) {
 }
 
 /**
+ * Redact sensitive header values to prevent credential leakage.
+ * Returns the header name with the value replaced by "[REDACTED]" if sensitive.
+ */
+const SENSITIVE_HEADERS = new Set([
+  "authorization",
+  "proxy-authorization",
+  "cookie",
+  "set-cookie",
+  "x-api-key",
+  "x-api-token",
+  "api-key",
+  "token",
+  "x-auth-token",
+  "x-access-token",
+  "x-session-token",
+  "x-csrf-token",
+  "x-xsrf-token",
+]);
+
+function redactSensitiveHeader(name, value) {
+  const lc = name.toLowerCase();
+  if (SENSITIVE_HEADERS.has(lc)) return "[REDACTED]";
+  return value;
+}
+
+/**
  * Convert raw header array [{ name, value }] to a plain object.
- * Filters out internal/binary headers that are not useful for test cases.
+ * Filters out internal/binary headers and redacts sensitive credentials.
  */
 function headersToObject(headers = []) {
   const skip = new Set([
@@ -55,7 +81,7 @@ function headersToObject(headers = []) {
   const obj = {};
   for (const { name, value } of headers) {
     const lc = name.toLowerCase();
-    if (!skip.has(lc)) obj[name] = value;
+    if (!skip.has(lc)) obj[name] = redactSensitiveHeader(name, value);
   }
   return obj;
 }
@@ -218,15 +244,16 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
             total:      payload.length,
             batchId:    body.batch_id    || null,
             resultsUrl: body.results_url || null,
+            webhookUrl: webhookUrl,       // passed for origin validation in main.js
           });
         })
         .catch(err => {
           doDetach();
-          sendResponse({ ok: true, sent: false, error: err.message, total: payload.length });
+          sendResponse({ ok: true, sent: false, error: err.message, total: payload.length, webhookUrl });
         });
     } else {
       doDetach();
-      sendResponse({ ok: true, sent: false, total: entries.length });
+      sendResponse({ ok: true, sent: false, total: entries.length, webhookUrl });
     }
     return true;
   }

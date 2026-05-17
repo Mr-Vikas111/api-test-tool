@@ -5,7 +5,6 @@ from __future__ import annotations
 import abc
 import json
 import logging
-import os
 import socket
 import time
 import urllib.error
@@ -62,12 +61,16 @@ class OllamaAdapter(LLMAdapter):
                     if attempt < self._RETRIES:
                         time.sleep(wait)
                     continue
-                log.error("OllamaAdapter.chat — connection error: %s", exc)
-                raise ConnectionError(f"Cannot reach Ollama at {self._base_url}: {exc}") from exc
+                log.exception("OllamaAdapter.chat — connection error: %s", exc)
+                msg = f"Cannot reach Ollama at {self._base_url}: {exc}"
+                raise ConnectionError(msg) from exc
 
-        raise TimeoutError(
+        msg = (
             f"Ollama timed out after {self._RETRIES} attempts ({settings.ollama_timeout}s each). "
             "Tip: raise OLLAMA_TIMEOUT in .env"
+        )
+        raise TimeoutError(
+            msg
         ) from last_exc
 
 
@@ -75,9 +78,10 @@ class OpenAIAdapter(LLMAdapter):
     _BASE_URL: str = "https://api.openai.com/v1/chat/completions"
 
     def __init__(self, api_key: str | None = None) -> None:
-        resolved_key = api_key or os.getenv("OPENAI_API_KEY", "")
+        resolved_key = api_key or settings.openai_api_key
         if not resolved_key:
-            raise ValueError("OpenAIAdapter requires OPENAI_API_KEY to be set (env var or api_key= argument).")
+            msg = "OpenAIAdapter requires OPENAI_API_KEY to be set (settings, env var, or api_key= argument)."
+            raise ValueError(msg)
         self._api_key = resolved_key
         log.info("OpenAIAdapter initialised")
 
@@ -98,18 +102,19 @@ class OpenAIAdapter(LLMAdapter):
                 raw = json.loads(resp.read())
         except urllib.error.HTTPError as exc:
             body_text = exc.read().decode(errors="replace")
-            log.error("OpenAIAdapter.chat — HTTP %d: %s", exc.code, body_text[:200])
-            raise RuntimeError(f"OpenAI API returned HTTP {exc.code}: {body_text}") from exc
+            log.exception("OpenAIAdapter.chat — HTTP %d: %s", exc.code, body_text[:200])
+            msg = f"OpenAI API returned HTTP {exc.code}: {body_text}"
+            raise RuntimeError(msg) from exc
         except urllib.error.URLError as exc:
-            log.error("OpenAIAdapter.chat — connection error: %s", exc)
-            raise ConnectionError(f"Cannot reach OpenAI API: {exc}") from exc
+            log.exception("OpenAIAdapter.chat — connection error: %s", exc)
+            msg = f"Cannot reach OpenAI API: {exc}"
+            raise ConnectionError(msg) from exc
 
         choices = raw.get("choices", [])
         if not choices:
             log.warning("OpenAIAdapter.chat — response had no choices")
             return ""
-        content = choices[0].get("message", {}).get("content", "")
-        return content
+        return choices[0].get("message", {}).get("content", "")
 
 
 class AdapterFactory:
@@ -121,6 +126,7 @@ class AdapterFactory:
         klass = cls._PROVIDERS.get(name)
         if klass is None:
             supported = ", ".join(f"'{p}'" for p in cls._PROVIDERS)
-            raise ValueError(f"Unknown LLM provider: {name!r}. Supported: {supported}.")
+            msg = f"Unknown LLM provider: {name!r}. Supported: {supported}."
+            raise ValueError(msg)
         log.info("AdapterFactory — creating adapter for provider=%r", name)
         return klass(**kwargs)
