@@ -5,8 +5,8 @@ from __future__ import annotations
 import threading
 from typing import Any
 
+from app.application.interfaces.llm_adapter import LLMAdapter
 from app.application.services.orchestrator_service import AgentOrchestrator
-from app.application.interfaces.llm_adapter import AdapterFactory, LLMAdapter
 from app.common import sanitize
 from app.infrastructure.database import batch_store as store_module
 from app.infrastructure.external import ollama_client

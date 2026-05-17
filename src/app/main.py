@@ -2,8 +2,13 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import ValidationError as PydanticValidationError
 
-from app.api.errors import app_error_handler, unhandled_error_handler
+from app.api.errors import (
+    app_error_handler,
+    pydantic_validation_handler,
+    unhandled_error_handler,
+)
 from app.api.middleware import request_id_middleware, timing_middleware
 from app.api.routes import create_health_router
 from app.api.v1 import create_v1_router
@@ -35,9 +40,10 @@ def create_application(
         lifespan=lifespan,
     )
 
+    cors_origins = [o.strip() for o in settings.cors_origins.split(",") if o.strip()]
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=cors_origins or ["*"],
         allow_methods=["*"],
         allow_headers=["*"],
     )
@@ -45,6 +51,7 @@ def create_application(
     app.middleware("http")(request_id_middleware)
 
     app.add_exception_handler(AppError, app_error_handler)  # type: ignore[arg-type]
+    app.add_exception_handler(PydanticValidationError, pydantic_validation_handler)  # type: ignore[arg-type]
     app.add_exception_handler(Exception, unhandled_error_handler)  # type: ignore[arg-type]
 
     # Unversioned routes

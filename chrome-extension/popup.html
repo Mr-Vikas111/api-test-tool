@@ -10,44 +10,65 @@
 
   <div class="window-frame">
 
+    <!-- ── Toast container (fixed position, populated by toast.js) ─────── -->
+    <div id="toast-container" class="toast-container" aria-live="polite"></div>
+
     <!-- ── Header ────────────────────────────────────────────────────────── -->
-    <header>
+    <header role="banner" aria-label="Extension toolbar">
       <div class="header-title">
-        <span class="logo">⚡</span>
+        <span class="logo" aria-hidden="true">⚡</span>
         <span>AI Test API Capture</span>
       </div>
       <div class="header-actions">
-        <div id="status-dot" class="dot dot-idle" title="Capture inactive"></div>
-        <button id="btn-theme" class="title-btn" title="Toggle dark/light mode">☀</button>
-        <button id="btn-compact" class="title-btn fullpage-only" title="Return to popup view" style="display:none">&lt;</button>
-        <button id="btn-fullpage" class="title-btn" title="Open as full page">⛶</button>
+        <div id="status-dot" class="dot dot-idle" role="status" aria-label="Capture status: inactive"></div>
+        <button id="btn-theme" class="title-btn" title="Toggle dark/light mode" aria-label="Toggle dark/light mode">☀</button>
+        <button id="btn-compact" class="title-btn fullpage-only" title="Return to popup view" style="display:none" aria-label="Return to popup view">&lt;</button>
+        <button id="btn-fullpage" class="title-btn" title="Open as full page" aria-label="Open as full page">⛶</button>
       </div>
     </header>
 
-    <!-- ── Workflow steps ─────────────────────────────────────────────────── -->
-    <div class="workflow-bar">
-      <div class="step step-active" id="step-1">
-        <span class="step-num">1</span>
+    <!-- ── Workflow steps (clickable tab navigation) ────────────────────────── -->
+    <div class="workflow-bar" role="tablist" aria-label="Workflow steps">
+      <button class="step step-active" id="step-1" data-view="capture" role="tab" aria-selected="true" aria-label="Step 1: Capture active">
+        <span class="step-num" aria-hidden="true">1</span>
         <span class="step-label">Capture</span>
-      </div>
-      <span class="step-arrow">›</span>
-      <div class="step step-pending" id="step-2">
-        <span class="step-num">2</span>
+      </button>
+      <span class="step-arrow" aria-hidden="true">›</span>
+      <button class="step step-pending" id="step-2" data-view="analyze" role="tab" aria-selected="false" aria-label="Step 2: Analyze pending" disabled>
+        <span class="step-num" aria-hidden="true">2</span>
         <span class="step-label">Analyze</span>
-      </div>
-      <span class="step-arrow">›</span>
-      <div class="step step-pending" id="step-3">
-        <span class="step-num">3</span>
+      </button>
+      <span class="step-arrow" aria-hidden="true">›</span>
+      <button class="step step-pending" id="step-3" data-view="results" role="tab" aria-selected="false" aria-label="Step 3: Results pending" disabled>
+        <span class="step-num" aria-hidden="true">3</span>
         <span class="step-label">Results</span>
-      </div>
+      </button>
     </div>
 
     <!-- ── Controls ────────────────────────────────────────────────────────── -->
     <div class="controls">
-      <button id="btn-start" class="btn btn-green">▶ Start</button>
-      <button id="btn-stop"  class="btn btn-red"   disabled>■ Stop</button>
-      <button id="btn-clear" class="btn btn-gray">Clear</button>
-      <span id="capture-count" class="count">0 requests</span>
+      <button id="btn-start" class="btn btn-green" aria-label="Start capturing API requests">▶ Start</button>
+      <button id="btn-stop"  class="btn btn-red"   disabled aria-label="Stop capturing">■ Stop</button>
+      <button id="btn-clear" class="btn btn-gray" aria-label="Clear captured requests">Clear</button>
+      <span id="live-status" class="live-status hidden" role="status">● Capturing…</span>
+      <span id="capture-count" class="count" aria-live="polite">0 requests</span>
+    </div>
+
+    <!-- ── Clear confirmation bar ───────────────────────────────────────── -->
+    <div id="clear-confirm" class="clear-confirm hidden" role="alertdialog" aria-label="Confirm clear">
+      <span class="clear-confirm-text">Clear all captured requests?</span>
+      <div class="clear-confirm-actions">
+        <button id="btn-confirm-clear" class="btn btn-red btn-sm">Yes, Clear</button>
+        <button id="btn-cancel-clear" class="btn btn-gray btn-sm">Cancel</button>
+      </div>
+    </div>
+
+    <!-- ── Batch action bar (for Phase 2 batch selection) ───────────────── -->
+    <div id="batch-bar" class="batch-bar hidden" role="toolbar" aria-label="Batch actions">
+      <span id="batch-count" class="batch-count">0 selected</span>
+      <button id="btn-batch-export" class="btn btn-blue btn-sm">Export Selected</button>
+      <button id="btn-batch-send" class="btn btn-green btn-sm">Send to Webhook</button>
+      <button id="btn-batch-select-all" class="btn btn-gray btn-sm">Select All</button>
     </div>
 
     <!-- ── Webhook ─────────────────────────────────────────────────────────── -->
@@ -59,152 +80,158 @@
           placeholder="Webhook URL (e.g. http://localhost:5055/api/v1/webhook)"
           autocomplete="off"
           spellcheck="false"
+          aria-label="Webhook URL"
         />
-        <button id="btn-test-webhook" class="btn btn-gray btn-sm" title="Ping /health to verify server is running">Test</button>
-        <button id="btn-save-webhook" class="btn btn-blue btn-sm">Save</button>
+        <button id="btn-test-webhook" class="btn btn-gray btn-sm" title="Ping /health to verify server is running" aria-label="Test webhook connection">Test</button>
+        <button id="btn-save-webhook" class="btn btn-blue btn-sm" aria-label="Save webhook URL">Save</button>
       </div>
-      <div id="webhook-status" class="webhook-status hidden"></div>
+      <div id="webhook-status" class="webhook-status hidden" role="alert"></div>
     </div>
 
     <!-- ── Main split (left=list, right=panels) ──────────────────────────── -->
-    <div class="main-split">
+    <div class="main-split" role="main">
 
       <!-- Left column: filter + request list -->
-      <div class="col-left">
+      <div class="col-left" role="region" aria-label="Captured requests">
 
         <!-- ── Filter ────────────────────────────────────────────────────── -->
-        <div class="filter-bar">
+        <div class="filter-bar" role="search" aria-label="Filter requests">
           <input
             id="filter-input"
             type="text"
             placeholder="Filter by URL, method, or status…"
             autocomplete="off"
+            aria-label="Filter captured requests"
           />
-          <div id="method-filter" class="method-filter">
-            <button class="mf-btn active" data-method="ALL">All <span class="mf-count">0</span></button>
-            <button class="mf-btn" data-method="GET">GET <span class="mf-count">0</span></button>
-            <button class="mf-btn" data-method="POST">POST <span class="mf-count">0</span></button>
-            <button class="mf-btn" data-method="PUT">PUT <span class="mf-count">0</span></button>
-            <button class="mf-btn" data-method="PATCH">PATCH <span class="mf-count">0</span></button>
-            <button class="mf-btn" data-method="DELETE">DEL <span class="mf-count">0</span></button>
+          <div id="method-filter" class="method-filter" role="group" aria-label="Filter by HTTP method">
+            <button class="mf-btn active" data-method="ALL" aria-pressed="true">All <span class="mf-count">0</span></button>
+            <button class="mf-btn" data-method="GET" aria-pressed="false">GET <span class="mf-count">0</span></button>
+            <button class="mf-btn" data-method="POST" aria-pressed="false">POST <span class="mf-count">0</span></button>
+            <button class="mf-btn" data-method="PUT" aria-pressed="false">PUT <span class="mf-count">0</span></button>
+            <button class="mf-btn" data-method="PATCH" aria-pressed="false">PATCH <span class="mf-count">0</span></button>
+            <button class="mf-btn" data-method="DELETE" aria-pressed="false">DEL <span class="mf-count">0</span></button>
           </div>
         </div>
 
+        <!-- ── Session timeline ────────────────────────────────────────────── -->
+        <div id="timeline" class="timeline hidden" aria-label="Request timing timeline"></div>
+
         <!-- ── Request list ───────────────────────────────────────────────── -->
-        <div id="request-list" class="request-list">
-          <div class="empty-state">No requests captured yet.<br/>Press <strong>▶ Start</strong> then use the page.</div>
+        <div id="request-list" class="request-list" role="listbox" aria-label="Captured requests">
+          <div class="empty-state" role="status">No requests captured yet.<br/>Press <strong>▶ Start</strong> then use the page.</div>
         </div>
 
       </div><!-- /.col-left -->
 
       <!-- Right column: detail + results panels -->
-      <div class="col-right">
+      <div class="col-right" role="region" aria-label="Request details and results">
 
         <!-- ── Detail panel ───────────────────────────────────────────────── -->
-        <div id="detail-panel" class="detail-panel hidden">
+        <div id="detail-panel" class="detail-panel detail-animated hidden" role="tabpanel" aria-label="Request detail">
 
           <div class="detail-header">
-            <span id="detail-title" class="detail-title"></span>
-            <button id="btn-close-detail" class="btn-icon" title="Close">✕</button>
+            <span id="detail-title" class="detail-title" aria-label="Request detail title"></span>
+            <button id="btn-close-detail" class="btn-icon" title="Close" aria-label="Close detail panel">✕</button>
           </div>
 
-          <div class="tabs">
-            <button class="tab-btn active" data-tab="request">Request</button>
-            <button class="tab-btn"        data-tab="response">Response</button>
-            <button class="tab-btn"        data-tab="export">Export JSON</button>
+          <div class="tabs" role="tablist" aria-label="Request detail tabs">
+            <button class="tab-btn active" data-tab="request" role="tab" aria-selected="true" aria-controls="tab-request">Request</button>
+            <button class="tab-btn"        data-tab="response" role="tab" aria-selected="false" aria-controls="tab-response">Response</button>
+            <button class="tab-btn"        data-tab="export" role="tab" aria-selected="false" aria-controls="tab-export">Export JSON</button>
           </div>
 
           <!-- Request tab -->
-          <div id="tab-request" class="tab-content active">
-            <label>URL</label>
-            <pre id="detail-url" class="code-block"></pre>
-            <label>Headers</label>
-            <pre id="detail-req-headers" class="code-block"></pre>
-            <label>Payload</label>
-            <pre id="detail-payload" class="code-block"></pre>
+          <div id="tab-request" class="tab-content active" role="tabpanel" aria-label="Request details">
+            <label id="label-detail-url">URL</label>
+            <pre id="detail-url" class="code-block" aria-labelledby="label-detail-url"></pre>
+            <label id="label-req-headers">Headers</label>
+            <pre id="detail-req-headers" class="code-block" aria-labelledby="label-req-headers"></pre>
+            <label id="label-payload">Payload</label>
+            <pre id="detail-payload" class="code-block" aria-labelledby="label-payload"></pre>
           </div>
 
           <!-- Response tab -->
-          <div id="tab-response" class="tab-content">
-            <label>Status</label>
-            <pre id="detail-status" class="code-block"></pre>
-            <label>Headers</label>
-            <pre id="detail-res-headers" class="code-block"></pre>
-            <label>Body</label>
-            <pre id="detail-response" class="code-block scrollable"></pre>
+          <div id="tab-response" class="tab-content" role="tabpanel" aria-label="Response details">
+            <label id="label-status">Status</label>
+            <pre id="detail-status" class="code-block" aria-labelledby="label-status"></pre>
+            <label id="label-res-headers">Headers</label>
+            <pre id="detail-res-headers" class="code-block" aria-labelledby="label-res-headers"></pre>
+            <label id="label-body">Body</label>
+            <pre id="detail-response" class="code-block scrollable" aria-labelledby="label-body"></pre>
           </div>
 
           <!-- Export tab -->
-          <div id="tab-export" class="tab-content">
+          <div id="tab-export" class="tab-content" role="tabpanel" aria-label="Export JSON">
             <p class="export-note">
               This JSON is ready to feed into the webhook endpoint <code>POST /api/v1/webhook</code>.
             </p>
-            <pre id="detail-export" class="code-block scrollable"></pre>
+            <pre id="detail-export" class="code-block scrollable" aria-label="Export JSON content"></pre>
             <div class="export-actions">
-              <button id="btn-copy"     class="btn btn-blue">Copy</button>
-              <button id="btn-download" class="btn btn-blue">Download</button>
+              <button id="btn-copy"     class="btn btn-blue" aria-label="Copy export JSON to clipboard">Copy</button>
+              <button id="btn-download" class="btn btn-blue" aria-label="Download export JSON as file">Download</button>
             </div>
           </div>
 
-          <div id="api-testcase-workspace" class="api-testcase-workspace hidden">
+          <div id="api-testcase-workspace" class="api-testcase-workspace hidden" role="region" aria-label="Generated test cases for this API">
             <div class="api-testcase-header">
               <div>
                 <div class="api-testcase-kicker">Selected API Testcases</div>
                 <div id="api-testcase-subtitle" class="api-testcase-subtitle">Generated tests for the selected request will appear here.</div>
               </div>
-              <div id="api-testcase-count" class="api-testcase-count">0 tests</div>
+              <div id="api-testcase-count" class="api-testcase-count" aria-live="polite">0 tests</div>
             </div>
-            <div id="api-testcase-chips" class="api-testcase-chips hidden"></div>
+            <div id="api-testcase-chips" class="api-testcase-chips hidden" role="tablist" aria-label="Test case categories"></div>
             <div class="api-testcase-shell">
-              <div id="api-testcase-list" class="api-testcase-list"></div>
-              <div id="api-testcase-viewer" class="api-testcase-viewer"></div>
+              <div id="api-testcase-list" class="api-testcase-list" role="listbox" aria-label="Test case list"></div>
+              <div id="api-testcase-viewer" class="api-testcase-viewer" aria-label="Test case details"></div>
             </div>
           </div>
 
         </div>
 
         <!-- ── Test Results panel ─────────────────────────────────────────────── -->
-        <div id="results-panel" class="results-panel hidden">
+        <div id="results-panel" class="results-panel results-animated hidden" role="region" aria-label="AI test analysis results">
 
           <div class="results-header">
             <span class="results-title">Test Results</span>
             <span id="results-restored-badge" class="results-restored-badge hidden">Restored</span>
-            <button id="btn-expand-all"   class="btn-icon-sm" title="Expand all tests">+</button>
-            <button id="btn-collapse-all" class="btn-icon-sm" title="Collapse all tests">−</button>
-            <button id="btn-close-results" class="btn-icon" title="Close">✕</button>
+            <button id="btn-expand-all"   class="btn-icon-sm" title="Expand all tests" aria-label="Expand all test results">+</button>
+            <button id="btn-collapse-all" class="btn-icon-sm" title="Collapse all tests" aria-label="Collapse all test results">−</button>
+            <button id="btn-close-results" class="btn-icon" title="Close" aria-label="Close results panel">✕</button>
           </div>
 
           <!-- Results filter tabs -->
-          <div class="results-filter-bar">
-            <button class="rf-btn active" data-filter="all">All</button>
-            <button class="rf-btn" data-filter="pass">Pass</button>
-            <button class="rf-btn" data-filter="fail">Fail</button>
-            <button class="rf-btn" data-filter="error">Error</button>
-            <button id="btn-reset-all-filters" class="rf-btn rf-btn-reset" title="Reset all request and results filters">Reset</button>
-            <span id="results-filter-count" class="rf-count"></span>
+          <div class="results-filter-bar" role="group" aria-label="Filter results by status">
+            <button class="rf-btn active" data-filter="all" aria-pressed="true">All</button>
+            <button class="rf-btn" data-filter="pass" aria-pressed="false">Pass</button>
+            <button class="rf-btn" data-filter="fail" aria-pressed="false">Fail</button>
+            <button class="rf-btn" data-filter="error" aria-pressed="false">Error</button>
+            <input id="results-search" type="text" class="results-search-filter" placeholder="Search tests…" aria-label="Search within test results" autocomplete="off" />
+            <button id="btn-reset-all-filters" class="rf-btn rf-btn-reset" title="Reset all request and results filters" aria-label="Reset all filters">Reset</button>
+            <span id="results-filter-count" class="rf-count" aria-live="polite"></span>
             <span id="results-scope" class="results-scope hidden"></span>
-            <button id="btn-clear-results-scope" class="btn-icon-sm results-scope-clear hidden" title="Clear selected API scope">✕</button>
+            <button id="btn-clear-results-scope" class="btn-icon-sm results-scope-clear hidden" title="Clear selected API scope" aria-label="Clear API scope">✕</button>
           </div>
-          <div id="results-category-filter" class="results-category-filter hidden"></div>
+          <div id="results-category-filter" class="results-category-filter hidden" role="group" aria-label="Filter by test category"></div>
 
           <!-- Progress / status bar -->
           <div id="results-status-bar" class="results-status-bar">
-            <span id="results-status-text" class="results-status-text">Waiting…</span>
-            <span id="results-spinner" class="spinner hidden"></span>
+            <span id="results-status-text" class="results-status-text" aria-live="polite">Waiting…</span>
+            <span id="results-spinner" class="spinner hidden" aria-label="Loading" role="status"></span>
           </div>
           <div id="results-progress-wrap" class="progress-wrap hidden">
-            <div id="results-progress-bar" class="progress-bar"></div>
+            <div id="results-progress-bar" class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
           </div>
 
           <!-- Summary row -->
-          <div id="results-summary" class="results-summary hidden">
+          <div id="results-summary" class="results-summary hidden" aria-live="polite">
             <span id="sum-passed" class="sum-chip sum-pass">0 Passed</span>
             <span id="sum-failed" class="sum-chip sum-fail">0 Failed</span>
             <span id="sum-errors" class="sum-chip sum-err">0 Errors</span>
           </div>
 
           <!-- Per-test list -->
-          <div id="results-list" class="results-list"></div>
+          <div id="results-list" class="results-list" role="list" aria-label="Individual test results"></div>
 
         </div><!-- /#results-panel -->
 
@@ -213,6 +240,6 @@
 
   </div><!-- /.window-frame -->
 
-  <script src="popup.js"></script>
+  <script type="module" src="main.js"></script>
 </body>
 </html>

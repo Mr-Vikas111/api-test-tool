@@ -2,7 +2,6 @@
 
 import logging
 import time
-from typing import Any
 
 import requests
 
@@ -65,8 +64,7 @@ def run_one(tc: dict) -> dict:
 
 def run_all(test_cases: list[dict]) -> list[dict]:
     log.info("[Runner] Running %d test case(s)", len(test_cases))
-    results = [run_one(tc) for tc in test_cases]
-    return results
+    return [run_one(tc) for tc in test_cases]
 
 
 def summarise(results: list[dict]) -> dict:

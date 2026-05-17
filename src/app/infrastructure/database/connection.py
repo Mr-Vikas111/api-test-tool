@@ -6,7 +6,6 @@ import logging
 import threading
 from typing import Any
 
-import psycopg2
 from psycopg2 import pool
 from psycopg2.extras import RealDictCursor
 
@@ -145,7 +144,8 @@ CREATE TABLE IF NOT EXISTS request_groups (
     total       INTEGER NOT NULL DEFAULT 0,
     passed      INTEGER NOT NULL DEFAULT 0,
     failed      INTEGER NOT NULL DEFAULT 0,
-    errors      INTEGER NOT NULL DEFAULT 0
+    errors      INTEGER NOT NULL DEFAULT 0,
+    UNIQUE(batch_id, request_seq)
 );
 CREATE INDEX IF NOT EXISTS idx_requests_batch ON requests(batch_id, seq);
 CREATE INDEX IF NOT EXISTS idx_test_cases_batch ON test_cases(batch_id, request_seq);

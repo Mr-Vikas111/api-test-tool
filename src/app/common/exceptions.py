@@ -33,6 +33,12 @@ class ForbiddenError(AppError):
     message = "Insufficient permissions"
 
 
+class BadRequestError(AppError):
+    status_code = 400
+    code = "BAD_REQUEST"
+    message = "Bad request"
+
+
 class ValidationError(AppError):
     status_code = 422
     code = "VALIDATION_ERROR"
